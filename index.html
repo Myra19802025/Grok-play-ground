@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Grok Image Playground</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c26;
+    --border: #2a2a38;
+    --accent: #7c6aff;
+    --accent2: #ff6a9e;
+    --accent3: #6affd4;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --success: #4ade80;
+    --error: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+  .app { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 16px 16px 80px; }
+
+  header { display: flex; align-items: center; gap: 12px; padding: 20px 0 22px; border-bottom: 1px solid var(--border); margin-bottom: 18px; }
+  .logo { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 800; color: #fff; flex-shrink: 0; box-shadow: 0 4px 16px rgba(124,106,255,0.4); }
+  .hinfo h1 { font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.05em; }
+  .hinfo p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .dot { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: all 0.3s; }
+  .dot.on { background: var(--success); box-shadow: 0 0 8px var(--success); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .card-title { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .badge { font-size: 9px; padding: 2px 8px; border-radius: 20px; font-family: 'Space Mono', monospace; }
+  .badge-gen { border: 1px solid var(--accent); color: var(--accent); background: rgba(124,106,255,0.08); }
+  .badge-edit { border: 1px solid var(--accent2); color: var(--accent2); background: rgba(255,106,158,0.08); }
+
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; }
+  input[type=text], input[type=password], textarea, select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; padding: 10px 12px; outline: none; transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 76px; line-height: 1.5; }
+  select option { background: var(--surface2); }
+  .field { margin-bottom: 12px; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  .api-row { position: relative; }
+  .api-row input { padding-right: 44px; font-family: 'Space Mono', monospace; font-size: 12px; }
+  .eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tab { flex: 1; padding: 10px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.1em; cursor: pointer; text-align: center; font-weight: 700; transition: all 0.2s; }
+  .tab.active-gen { border-color: var(--accent); color: var(--accent); background: rgba(124,106,255,0.08); }
+  .tab.active-edit { border-color: var(--accent2); color: var(--accent2); background: rgba(255,106,158,0.08); }
+  .panel { display: none; }
+  .panel.show { display: block; animation: fadeIn 0.25s ease; }
+
+  .opt-grid { display: grid; gap: 6px; }
+  .opt-grid.cols2 { grid-template-columns: repeat(2,1fr); }
+  .opt-grid.cols3 { grid-template-columns: repeat(3,1fr); }
+  .opt-grid.cols4 { grid-template-columns: repeat(4,1fr); }
+  .opt { padding: 8px 4px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.04em; cursor: pointer; text-align: center; transition: all 0.2s; }
+  .opt.sel { border-color: var(--accent); color: var(--accent); background: rgba(124,106,255,0.08); }
+  .opt.sel-edit { border-color: var(--accent2); color: var(--accent2); background: rgba(255,106,158,0.08); }
+
+  .cost-bar { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-family: 'Space Mono', monospace; font-size: 11px; }
+  .cost-val { color: var(--accent3); font-weight: 700; font-size: 14px; }
+
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border-radius: 10px; border: none; font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: 0.08em; cursor: pointer; font-weight: 700; transition: all 0.2s; }
+  .btn-gen { background: linear-gradient(135deg, var(--accent), #9b5fff); color: #fff; box-shadow: 0 4px 20px rgba(124,106,255,0.35); }
+  .btn-gen:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(124,106,255,0.5); }
+  .btn-edit { background: linear-gradient(135deg, var(--accent2), #ff3d7f); color: #fff; box-shadow: 0 4px 20px rgba(255,106,158,0.35); }
+  .btn-edit:hover { transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+  .btn-sm { padding: 7px 14px; width: auto; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); font-family: 'Space Mono', monospace; font-size: 10px; cursor: pointer; font-weight: 700; transition: all 0.2s; }
+
+  .img-src-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .isrc { flex: 1; padding: 7px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.08em; cursor: pointer; text-align: center; transition: all 0.2s; }
+  .isrc.active { border-color: var(--accent2); color: var(--accent2); background: rgba(255,106,158,0.08); }
+
+  .file-drop { border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: border-color 0.2s; position: relative; }
+  .file-drop.drag, .file-drop:hover { border-color: var(--accent2); }
+  .file-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .file-preview { margin-top: 8px; display: flex; justify-content: center; }
+  .file-preview img { max-height: 130px; border-radius: 8px; }
+  .last-preview { border-radius: 8px; overflow: hidden; border: 2px solid var(--accent2); }
+  .last-preview img { width: 100%; display: block; max-height: 170px; object-fit: contain; }
+  .no-last { color: var(--muted); font-size: 12px; text-align: center; padding: 20px; border: 1px dashed var(--border); border-radius: 8px; font-family: 'Space Mono', monospace; }
+
+  /* OUTPUT */
+  .out-wrap { margin-top: 16px; }
+  .out-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .output-area { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; min-height: 220px; display: flex; align-items: center; justify-content: center; position: relative; }
+  .out-placeholder { text-align: center; padding: 40px 24px; }
+  .out-placeholder .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.2; }
+  .out-placeholder p { color: var(--muted); font-size: 13px; }
+  .out-img { width: 100%; display: block; border-radius: 14px; }
+  .out-actions { display: flex; gap: 8px; padding: 10px; justify-content: flex-end; }
+
+  /* PROGRESS BAR */
+  .prog-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--border); border-radius: 14px 14px 0 0; overflow: hidden; }
+  .prog-fill { height: 100%; width: 0%; transition: width 0.4s ease; border-radius: 14px; }
+  .prog-fill.gen { background: linear-gradient(90deg, var(--accent), #9b5fff); }
+  .prog-fill.edit { background: linear-gradient(90deg, var(--accent2), #ff3d7f); }
+
+  /* LOADING */
+  .loading-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 48px; }
+  .spinner { width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--border); border-top-color: var(--accent); animation: spin 0.7s linear infinite; }
+  .spinner.edit { border-top-color: var(--accent2); }
+  .loading-msg { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); letter-spacing: 0.08em; }
+  .loading-sub { font-family: 'Space Mono', monospace; font-size: 10px; color: #2a2a3e; }
+
+  /* POLL STATUS */
+  .poll-status { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--accent3); margin-top: 4px; }
+
+  /* LOG */
+  .log { padding: 8px 12px; margin-top: 10px; border-radius: 8px; background: var(--surface); font-family: 'Space Mono', monospace; font-size: 10px; line-height: 1.5; animation: fadeIn 0.3s ease; display: none; }
+  .log.show { display: block; }
+  .log.ok { border: 1px solid var(--success); color: var(--success); }
+  .log.err { border: 1px solid var(--error); color: var(--error); }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 20px; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text); transition: transform 0.3s ease; z-index: 100; white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.ok { border-color: var(--success); color: var(--success); }
+  .toast.err { border-color: var(--error); color: var(--error); }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">GX</div>
+    <div class="hinfo">
+      <h1>GROK IMAGE PLAYGROUND</h1>
+      <p>Atlas Cloud · xAI Grok Imagine · Local only</p>
+    </div>
+    <div class="dot" id="dot"></div>
+  </header>
+
+  <!-- API KEY -->
+  <div class="card">
+    <div class="card-title">API CONFIG</div>
+    <div class="field">
+      <label>Atlas Cloud API Key</label>
+      <div class="api-row">
+        <input type="password" id="apiKey" placeholder="your-atlascloud-api-key" oninput="updateDot()">
+        <button class="eye" onclick="toggleKey()" type="button">👁</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active-gen" id="tabGen" onclick="switchTab('gen')">⚡ GENERATE</div>
+    <div class="tab" id="tabEdit" onclick="switchTab('edit')">✏️ EDIT</div>
+  </div>
+
+  <!-- ══ GENERATE PANEL ══ -->
+  <div class="panel show" id="panelGen">
+    <div class="card">
+      <div class="card-title"><span>GENERATION SETTINGS</span><span class="badge badge-gen">GEN</span></div>
+
+      <div class="field">
+        <label>Prompt</label>
+        <textarea id="genPrompt" placeholder="Epic cinematic landscape, dramatic lighting, moody atmosphere..."></textarea>
+      </div>
+
+      <div class="field">
+        <label>Aspect Ratio</label>
+        <div class="opt-grid cols4" id="arGrid">
+          <div class="opt sel" data-val="1:1" onclick="pickOpt(this,'arGrid','sel')">1:1</div>
+          <div class="opt" data-val="16:9" onclick="pickOpt(this,'arGrid','sel')">16:9</div>
+          <div class="opt" data-val="9:16" onclick="pickOpt(this,'arGrid','sel')">9:16</div>
+          <div class="opt" data-val="4:3" onclick="pickOpt(this,'arGrid','sel')">4:3</div>
+          <div class="opt" data-val="3:4" onclick="pickOpt(this,'arGrid','sel')">3:4</div>
+          <div class="opt" data-val="2:3" onclick="pickOpt(this,'arGrid','sel')">2:3</div>
+          <div class="opt" data-val="3:2" onclick="pickOpt(this,'arGrid','sel')">3:2</div>
+          <div class="opt" data-val="1:2" onclick="pickOpt(this,'arGrid','sel')">1:2</div>
+        </div>
+      </div>
+
+      <div class="row field">
+        <div>
+          <label>Resolution</label>
+          <div class="opt-grid cols2" id="resGrid">
+            <div class="opt sel" data-val="1k" onclick="pickOpt(this,'resGrid','sel')">1K <span style="font-size:8px;opacity:0.6">$0.05</span></div>
+            <div class="opt" data-val="2k" onclick="pickOpt(this,'resGrid','sel')">2K <span style="font-size:8px;opacity:0.6">$0.07</span></div>
+          </div>
+        </div>
+        <div>
+          <label>Images</label>
+          <div class="opt-grid cols2" id="numGrid">
+            <div class="opt sel" data-val="1" onclick="pickOpt(this,'numGrid','sel');updateCost()">1</div>
+            <div class="opt" data-val="2" onclick="pickOpt(this,'numGrid','sel');updateCost()">2</div>
+            <div class="opt" data-val="3" onclick="pickOpt(this,'numGrid','sel');updateCost()">3</div>
+            <div class="opt" data-val="4" onclick="pickOpt(this,'numGrid','sel');updateCost()">4</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cost-bar">
+      <span style="color:var(--muted);flex:1">💰 Est. Cost</span>
+      <span class="cost-val" id="genCost">~$0.05</span>
+      <span style="color:var(--muted);font-size:9px">per run</span>
+    </div>
+
+    <button class="btn btn-gen" id="btnGen" onclick="runGenerate()">⚡ GENERATE IMAGE</button>
+    <div class="log" id="genLog"></div>
+  </div>
+
+  <!-- ══ EDIT PANEL ══ -->
+  <div class="panel" id="panelEdit">
+    <div class="card">
+      <div class="card-title"><span>SOURCE IMAGE</span><span class="badge badge-edit">EDIT</span></div>
+      <div class="img-src-tabs">
+        <div class="isrc active" id="srcLast" onclick="switchSrc('last')">📋 LAST GENERATED</div>
+        <div class="isrc" id="srcUp" onclick="switchSrc('upload')">📎 UPLOAD IMAGE</div>
+      </div>
+      <div id="lastPanel">
+        <div id="lastPreview" class="no-last">No generated image yet — run Generate first</div>
+      </div>
+      <div id="uploadPanel" style="display:none">
+        <div class="file-drop" id="fileDrop">
+          <input type="file" accept="image/*" id="fileInput" onchange="handleFile(event)">
+          <div style="font-size:24px;margin-bottom:6px">📁</div>
+          <p style="color:var(--muted);font-size:12px">Tap to pick image</p>
+        </div>
+        <div class="file-preview" id="filePreview"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">EDIT PROMPT</div>
+      <div class="field">
+        <label>Describe the change</label>
+        <textarea id="editPrompt" placeholder="Transform into a watercolour painting, keep the composition..."></textarea>
+      </div>
+      <div class="field">
+        <label>Aspect Ratio</label>
+        <div class="opt-grid cols4" id="earGrid">
+          <div class="opt sel-edit" data-val="auto" onclick="pickOpt(this,'earGrid','sel-edit')">auto</div>
+          <div class="opt" data-val="1:1" onclick="pickOpt(this,'earGrid','sel-edit')">1:1</div>
+          <div class="opt" data-val="16:9" onclick="pickOpt(this,'earGrid','sel-edit')">16:9</div>
+          <div class="opt" data-val="9:16" onclick="pickOpt(this,'earGrid','sel-edit')">9:16</div>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Resolution</label>
+        <div class="opt-grid cols2" id="eresGrid">
+          <div class="opt sel-edit" data-val="1k" onclick="pickOpt(this,'eresGrid','sel-edit')">1K <span style="font-size:8px;opacity:0.6">$0.05</span></div>
+          <div class="opt" data-val="2k" onclick="pickOpt(this,'eresGrid','sel-edit')">2K <span style="font-size:8px;opacity:0.6">$0.07</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cost-bar">
+      <span style="color:var(--muted);flex:1">💰 Est. Cost</span>
+      <span class="cost-val">~$0.06</span>
+      <span style="color:var(--muted);font-size:9px">input $0.01 + output $0.05</span>
+    </div>
+
+    <button class="btn btn-edit" id="btnEdit" onclick="runEdit()">✏️ EDIT IMAGE</button>
+    <div class="log" id="editLog"></div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="out-wrap">
+    <div class="out-label">
+      <span>OUTPUT</span>
+      <span id="actualCost" style="margin-left:auto;color:var(--accent3);font-size:10px"></span>
+    </div>
+    <div class="output-area" id="outputArea">
+      <div class="prog-bar"><div class="prog-fill gen" id="progFill"></div></div>
+      <div class="out-placeholder" id="outPlaceholder">
+        <div class="icon">🖼</div>
+        <p>Your image will appear here</p>
+      </div>
+      <div class="loading-wrap" id="loadWrap" style="display:none">
+        <div class="spinner" id="spinner"></div>
+        <div class="loading-msg" id="loadMsg">Submitting...</div>
+        <div class="loading-sub" id="loadSub">Usually takes 10–30s</div>
+        <div class="poll-status" id="pollStatus"></div>
+      </div>
+      <div id="outResult" style="display:none;width:100%">
+        <img id="outImg" class="out-img" alt="Output">
+        <div class="out-actions">
+          <button class="btn-sm" style="color:var(--accent)" onclick="useForEdit()">✏️ Use for Edit</button>
+          <button class="btn-sm" style="color:var(--accent2)" onclick="downloadImg()">⬇ Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const BASE = 'https://api.atlascloud.ai/api/v1/model';
+const PRICES = { '1k': 0.05, '2k': 0.07 };
+
+let lastGenB64 = null;
+let lastGenDataUrl = null;
+let uploadedDataUrl = null;
+let imgSrcMode = 'last';
+let currentTab = 'gen';
+let progTimer = null;
+let progVal = 0;
+
+// ── HELPERS ──────────────────────────────────────────
+function getKey() {
+  const k = document.getElementById('apiKey').value.trim();
+  if (!k) { showToast('Paste your Atlas Cloud API key first', 'err'); return null; }
+  return k;
+}
+function updateDot() {
+  const k = document.getElementById('apiKey').value.trim();
+  document.getElementById('dot').className = 'dot' + (k ? ' on' : '');
+}
+function toggleKey() {
+  const i = document.getElementById('apiKey');
+  i.type = i.type === 'password' ? 'text' : 'password';
+}
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show' + (type ? ' '+type : '');
+  clearTimeout(t._t); t._t = setTimeout(() => t.className='toast', 3000);
+}
+function showLog(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.className = 'log show ' + type;
+}
+function pickOpt(el, gridId, cls) {
+  document.querySelectorAll('#'+gridId+' .opt').forEach(e => e.classList.remove('sel','sel-edit'));
+  el.classList.add(cls);
+}
+function getOpt(gridId) {
+  const el = document.querySelector('#'+gridId+' .opt.sel, #'+gridId+' .opt.sel-edit');
+  return el ? el.dataset.val : null;
+}
+function updateCost() {
+  const n = parseInt(getOpt('numGrid') || 1);
+  const res = getOpt('resGrid') || '1k';
+  document.getElementById('genCost').textContent = `~$${(PRICES[res] * n).toFixed(2)}`;
+}
+
+// ── PROGRESS ─────────────────────────────────────────
+function startProg(type) {
+  progVal = 0;
+  document.getElementById('progFill').className = 'prog-fill ' + type;
+  document.getElementById('progFill').style.width = '0%';
+  clearInterval(progTimer);
+  progTimer = setInterval(() => {
+    progVal += Math.random() * 6;
+    if (progVal > 90) progVal = 90;
+    document.getElementById('progFill').style.width = progVal + '%';
+  }, 500);
+}
+function endProg() {
+  clearInterval(progTimer);
+  document.getElementById('progFill').style.width = '100%';
+  setTimeout(() => { document.getElementById('progFill').style.width = '0%'; }, 600);
+}
+
+// ── LOADING STATE ────────────────────────────────────
+function setLoading(on, msg='', type='gen') {
+  document.getElementById('outPlaceholder').style.display = on ? 'none' : 'flex';
+  document.getElementById('loadWrap').style.display = on ? 'flex' : 'none';
+  document.getElementById('outResult').style.display = 'none';
+  document.getElementById('loadMsg').textContent = msg;
+  document.getElementById('spinner').className = 'spinner ' + (type === 'edit' ? 'edit' : '');
+  document.getElementById('pollStatus').textContent = '';
+  if (on) startProg(type); else endProg();
+}
+function setPollStatus(txt) {
+  document.getElementById('pollStatus').textContent = txt;
+}
+function showResult(dataUrl) {
+  document.getElementById('outImg').src = dataUrl;
+  document.getElementById('outPlaceholder').style.display = 'none';
+  document.getElementById('loadWrap').style.display = 'none';
+  document.getElementById('outResult').style.display = 'block';
+  endProg();
+}
+
+// ── TABS ─────────────────────────────────────────────
+function switchTab(t) {
+  currentTab = t;
+  document.getElementById('panelGen').className = 'panel' + (t==='gen'?' show':'');
+  document.getElementById('panelEdit').className = 'panel' + (t==='edit'?' show':'');
+  document.getElementById('tabGen').className = 'tab' + (t==='gen'?' active-gen':'');
+  document.getElementById('tabEdit').className = 'tab' + (t==='edit'?' active-edit':'');
+}
+function switchSrc(mode) {
+  imgSrcMode = mode;
+  document.getElementById('srcLast').className = 'isrc' + (mode==='last'?' active':'');
+  document.getElementById('srcUp').className = 'isrc' + (mode==='upload'?' active':'');
+  document.getElementById('lastPanel').style.display = mode==='last'?'block':'none';
+  document.getElementById('uploadPanel').style.display = mode==='upload'?'block':'none';
+}
+
+// ── FILE UPLOAD ──────────────────────────────────────
+function handleFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    uploadedDataUrl = ev.target.result;
+    document.getElementById('filePreview').innerHTML = `<img src="${uploadedDataUrl}">`;
+    showToast('Image loaded ✓', 'ok');
+  };
+  reader.readAsDataURL(file);
+}
+function updateLastPreview() {
+  if (!lastGenDataUrl) return;
+  document.getElementById('lastPreview').outerHTML = `<div class="last-preview" id="lastPreview"><img src="${lastGenDataUrl}"></div>`;
+}
+
+// ── USE FOR EDIT ─────────────────────────────────────
+function useForEdit() {
+  if (!lastGenDataUrl) return;
+  switchTab('edit'); switchSrc('last'); updateLastPreview();
+  showToast('Ready to edit ✏️', 'ok');
+}
+
+// ── DOWNLOAD ─────────────────────────────────────────
+function downloadImg() {
+  const src = document.getElementById('outImg').src;
+  if (!src) return;
+  const a = document.createElement('a');
+  a.href = src; a.download = 'grok-'+Date.now()+'.png'; a.click();
+}
+
+// ── POLL ─────────────────────────────────────────────
+async function pollResult(predictionId, key, attempt=0) {
+  const maxAttempts = 60;
+  if (attempt >= maxAttempts) throw new Error('Timed out after 2 minutes');
+  setPollStatus(`Polling... attempt ${attempt+1}`);
+  const res = await fetch(`${BASE}/prediction/${predictionId}`, {
+    headers: { 'Authorization': `Bearer ${key}` }
+  });
+  const data = await res.json();
+  const status = data?.data?.status || data?.status;
+  const outputs = data?.data?.outputs || data?.outputs;
+
+  if (status === 'completed' || status === 'succeeded') {
+    if (outputs && outputs[0]) return { output: outputs[0], raw: data };
+    throw new Error('Completed but no output: ' + JSON.stringify(data));
+  }
+  if (status === 'failed') {
+    throw new Error(data?.data?.error || data?.error || 'Generation failed');
+  }
+  // Still processing — wait 2s and retry
+  await new Promise(r => setTimeout(r, 2000));
+  return pollResult(predictionId, key, attempt + 1);
+}
+
+// ── URL → DATA URL ───────────────────────────────────
+async function urlToDataUrl(url) {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.readAsDataURL(blob);
+  });
+}
+
+// ── GENERATE ─────────────────────────────────────────
+async function runGenerate() {
+  const key = getKey(); if (!key) return;
+  const prompt = document.getElementById('genPrompt').value.trim();
+  if (!prompt) { showToast('Enter a prompt first', 'err'); return; }
+
+  const ar = getOpt('arGrid') || '1:1';
+  const res = getOpt('resGrid') || '1k';
+  const n = parseInt(getOpt('numGrid') || 1);
+
+  document.getElementById('btnGen').disabled = true;
+  setLoading(true, 'Submitting to Atlas Cloud...', 'gen');
+  document.getElementById('genLog').className = 'log';
+
+  try {
+    const body = {
+      model: 'xai/grok-imagine-image-quality/text-to-image',
+      prompt,
+      num_images: n,
+      aspect_ratio: ar,
+      resolution: res,
+      enable_base64_output: true
+    };
+
+    const submitRes = await fetch(`${BASE}/generateImage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify(body)
+    });
+    const submitData = await submitRes.json();
+    if (!submitRes.ok) throw new Error(submitData?.message || submitData?.error || JSON.stringify(submitData));
+
+    const predId = submitData?.data?.id || submitData?.id;
+    if (!predId) throw new Error('No prediction ID: ' + JSON.stringify(submitData));
+
+    document.getElementById('loadMsg').textContent = 'Grok is painting... ✦';
+    const { output } = await pollResult(predId, key);
+
+    // output is either a base64 string or a URL
+    let dataUrl;
+    if (output.startsWith('data:') || output.startsWith('http')) {
+      dataUrl = output.startsWith('data:') ? output : await urlToDataUrl(output);
+    } else {
+      // raw base64 without prefix
+      dataUrl = 'data:image/png;base64,' + output;
+    }
+    lastGenDataUrl = dataUrl;
+    updateLastPreview();
+    showResult(dataUrl);
+
+    const cost = (PRICES[res] * n).toFixed(2);
+    document.getElementById('actualCost').textContent = `💰 ~$${cost} · ${n} image${n>1?'s':''}`;
+    showLog('genLog', `✓ Done · ${ar} · ${res} · ${n} image${n>1?'s':''}`, 'ok');
+    showToast('Generated! ⚡', 'ok');
+
+  } catch (err) {
+    setLoading(false);
+    document.getElementById('outPlaceholder').style.display = 'flex';
+    showLog('genLog', '✗ ' + err.message, 'err');
+    showToast(err.message.slice(0,70), 'err');
+    console.error('Generate error:', err);
+  } finally {
+    document.getElementById('btnGen').disabled = false;
+  }
+}
+
+// ── EDIT ─────────────────────────────────────────────
+async function runEdit() {
+  const key = getKey(); if (!key) return;
+  const prompt = document.getElementById('editPrompt').value.trim();
+  if (!prompt) { showToast('Enter an edit prompt first', 'err'); return; }
+
+  const srcDataUrl = imgSrcMode === 'last' ? lastGenDataUrl : uploadedDataUrl;
+  if (!srcDataUrl) {
+    showToast(imgSrcMode==='last' ? 'Generate an image first' : 'Upload an image first', 'err'); return;
+  }
+
+  const ar = getOpt('earGrid') || 'auto';
+  const res = getOpt('eresGrid') || '1k';
+
+  document.getElementById('btnEdit').disabled = true;
+  setLoading(true, 'Submitting to Atlas Cloud...', 'edit');
+  document.getElementById('editLog').className = 'log';
+
+  try {
+    const body = {
+      model: 'xai/grok-imagine-image-quality/edit',
+      prompt,
+      image_urls: [srcDataUrl],
+      num_images: 1,
+      aspect_ratio: ar,
+      resolution: res,
+      enable_base64_output: true
+    };
+
+    const submitRes = await fetch(`${BASE}/generateImage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify(body)
+    });
+    const submitData = await submitRes.json();
+    if (!submitRes.ok) throw new Error(submitData?.message || submitData?.error || JSON.stringify(submitData));
+
+    const predId = submitData?.data?.id || submitData?.id;
+    if (!predId) throw new Error('No prediction ID: ' + JSON.stringify(submitData));
+
+    document.getElementById('loadMsg').textContent = 'Grok is editing... ✦';
+    const { output } = await pollResult(predId, key);
+
+    let dataUrl;
+    if (output.startsWith('data:') || output.startsWith('http')) {
+      dataUrl = output.startsWith('data:') ? output : await urlToDataUrl(output);
+    } else {
+      dataUrl = 'data:image/png;base64,' + output;
+    }
+    lastGenDataUrl = dataUrl;
+    updateLastPreview();
+    showResult(dataUrl);
+
+    const cost = (0.01 + PRICES[res]).toFixed(2);
+    document.getElementById('actualCost').textContent = `💰 ~$${cost} · edit`;
+    showLog('editLog', `✓ Done · ${ar} · ${res}`, 'ok');
+    showToast('Edited! ✏️', 'ok');
+
+  } catch (err) {
+    setLoading(false);
+    document.getElementById('outPlaceholder').style.display = 'flex';
+    showLog('editLog', '✗ ' + err.message, 'err');
+    showToast(err.message.slice(0,70), 'err');
+  } finally {
+    document.getElementById('btnEdit').disabled = false;
+  }
+}
+</script>
+</body>
+</html>
