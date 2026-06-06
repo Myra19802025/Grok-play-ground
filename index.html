@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Grok Image Playground</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c26;
+    --border: #2a2a38;
+    --accent: #7c6aff;
+    --accent2: #ff6a9e;
+    --accent3: #6affd4;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --success: #4ade80;
+    --warn: #fbbf24;
+    --error: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+
+  /* NOISE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 16px 16px 60px; }
+
+  /* HEADER */
+  header { display: flex; align-items: center; gap: 12px; padding: 20px 0 24px; }
+  .logo-mark {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  header h1 { font-family: 'Space Mono', monospace; font-size: 16px; font-weight: 700; letter-spacing: 0.04em; }
+  header p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .status-dot {
+    margin-left: auto; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--muted); flex-shrink: 0; transition: background 0.3s;
+  }
+  .status-dot.active { background: var(--success); box-shadow: 0 0 8px var(--success); }
+
+  /* SECTION WRAPPER */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px; margin-bottom: 14px;
+  }
+  .card-title {
+    font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.12em;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title span { flex: 1; }
+  .badge {
+    font-size: 9px; padding: 2px 8px; border-radius: 20px; font-family: 'Space Mono', monospace;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
+  }
+  .badge.gen { border-color: var(--accent); color: var(--accent); }
+  .badge.edit { border-color: var(--accent2); color: var(--accent2); }
+
+  /* INPUTS */
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; }
+  input[type=text], input[type=password], textarea, select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; padding: 10px 12px; outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type=text]:focus, input[type=password]:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+  }
+  textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+  select option { background: var(--surface2); }
+
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  .field { margin-bottom: 12px; }
+
+  /* API KEY ROW */
+  .api-row { position: relative; }
+  .api-row input { padding-right: 44px; font-family: 'Space Mono', monospace; font-size: 12px; }
+  .eye-btn {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px;
+    font-size: 16px;
+  }
+
+  /* TABS */
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .tab {
+    flex: 1; padding: 9px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--muted); font-family: 'Space Mono', monospace;
+    font-size: 10px; letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s;
+    text-align: center;
+  }
+  .tab.active { border-color: var(--accent); color: var(--accent); background: rgba(124,106,255,0.08); }
+  .tab.edit-tab.active { border-color: var(--accent2); color: var(--accent2); background: rgba(255,106,158,0.08); }
+
+  /* PANEL */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* BUTTONS */
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 13px; border-radius: 10px; border: none;
+    font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: 0.06em;
+    cursor: pointer; transition: all 0.2s; font-weight: 700;
+  }
+  .btn-gen {
+    background: linear-gradient(135deg, var(--accent), #9b5fff);
+    color: #fff; box-shadow: 0 4px 20px rgba(124,106,255,0.35);
+  }
+  .btn-gen:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(124,106,255,0.5); }
+  .btn-edit {
+    background: linear-gradient(135deg, var(--accent2), #ff3d7f);
+    color: #fff; box-shadow: 0 4px 20px rgba(255,106,158,0.35);
+  }
+  .btn-edit:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(255,106,158,0.5); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+  .btn-sm {
+    padding: 7px 14px; width: auto; border-radius: 7px; font-size: 10px;
+  }
+  .btn-ghost {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
+  }
+  .btn-ghost:hover { border-color: var(--accent3); color: var(--accent3); }
+
+  /* COST TAG */
+  .cost-bar {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
+    font-family: 'Space Mono', monospace; font-size: 11px;
+  }
+  .cost-label { color: var(--muted); flex: 1; }
+  .cost-val { color: var(--accent3); font-weight: 700; font-size: 13px; }
+  .cost-note { color: var(--muted); font-size: 9px; }
+
+  /* OUTPUT AREA */
+  .output-area {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; position: relative; min-height: 200px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .output-placeholder {
+    text-align: center; padding: 40px 24px;
+  }
+  .output-placeholder .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.3; }
+  .output-placeholder p { color: var(--muted); font-size: 13px; }
+  .output-img { width: 100%; display: block; border-radius: 12px; }
+  .output-actions {
+    position: absolute; bottom: 10px; right: 10px;
+    display: flex; gap: 6px;
+  }
+  .output-actions.hidden { display: none; }
+
+  /* SPINNER */
+  .spinner {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 48px; }
+  .loading-wrap p { color: var(--muted); font-size: 12px; font-family: 'Space Mono', monospace; }
+
+  /* IMAGE SOURCE SELECTOR */
+  .img-source-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .img-src-btn {
+    flex: 1; padding: 7px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--muted);
+    font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.08em;
+    cursor: pointer; transition: all 0.2s; text-align: center;
+  }
+  .img-src-btn.active { border-color: var(--accent2); color: var(--accent2); background: rgba(255,106,158,0.08); }
+
+  /* LAST GEN PREVIEW */
+  .last-gen-preview {
+    border-radius: 8px; overflow: hidden; border: 2px solid var(--border);
+    cursor: pointer; transition: border-color 0.2s; max-height: 160px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .last-gen-preview.selected { border-color: var(--accent2); }
+  .last-gen-preview img { width: 100%; display: block; max-height: 160px; object-fit: contain; }
+  .no-last { color: var(--muted); font-size: 12px; text-align: center; padding: 24px; }
+
+  /* FILE UPLOAD */
+  .file-drop {
+    border: 2px dashed var(--border); border-radius: 8px; padding: 20px;
+    text-align: center; cursor: pointer; transition: border-color 0.2s;
+    position: relative;
+  }
+  .file-drop:hover, .file-drop.drag { border-color: var(--accent2); }
+  .file-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .file-drop p { color: var(--muted); font-size: 12px; }
+  .file-drop .icon { font-size: 24px; margin-bottom: 6px; }
+  .file-preview { margin-top: 8px; border-radius: 8px; overflow: hidden; max-height: 120px; display: flex; justify-content: center; }
+  .file-preview img { max-height: 120px; border-radius: 8px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 20px;
+    font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text);
+    transition: transform 0.3s ease; z-index: 100; white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.err { border-color: var(--error); color: var(--error); }
+  .toast.ok { border-color: var(--success); color: var(--success); }
+
+  /* RESPONSE LOG */
+  .log {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; margin-top: 10px;
+    font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted);
+    max-height: 80px; overflow-y: auto; line-height: 1.6;
+    display: none;
+  }
+  .log.show { display: block; }
+
+  /* DIVIDER */
+  hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+  /* SIZE OPTIONS */
+  .size-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .size-opt {
+    padding: 8px 4px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--muted);
+    font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.04em;
+    cursor: pointer; text-align: center; transition: all 0.2s;
+  }
+  .size-opt.active { border-color: var(--accent); color: var(--accent); background: rgba(124,106,255,0.08); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-mark">GX</div>
+    <div>
+      <h1>GROK IMAGE PLAYGROUND</h1>
+      <p>xAI Aurora · Generate &amp; Edit · Local only</p>
+    </div>
+    <div class="status-dot" id="statusDot"></div>
+  </header>
+
+  <!-- API KEY -->
+  <div class="card">
+    <div class="card-title"><span>API CONFIG</span></div>
+    <div class="field">
+      <label>xAI API Key</label>
+      <div class="api-row">
+        <input type="password" id="apiKey" placeholder="xai-xxxxxxxxxxxxxxxxxxxxxxxx">
+        <button class="eye-btn" onclick="toggleKey()" id="eyeBtn">👁</button>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label>Model</label>
+      <select id="modelSel">
+        <option value="grok-2-image">grok-2-image (Generation)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" id="tabGen" onclick="switchTab('gen')">⚡ GENERATE</div>
+    <div class="tab edit-tab" id="tabEdit" onclick="switchTab('edit')">✏️ EDIT</div>
+  </div>
+
+  <!-- ═══════════════ GENERATE PANEL ═══════════════ -->
+  <div class="panel active" id="panelGen">
+
+    <div class="card">
+      <div class="card-title"><span>GENERATION SETTINGS</span><span class="badge gen">GEN</span></div>
+
+      <div class="field">
+        <label>Prompt</label>
+        <textarea id="genPrompt" placeholder="A cinematic photo of a lone wolf standing on a misty mountain ridge at golden hour, dramatic lighting..."></textarea>
+      </div>
+
+      <div class="row field">
+        <div>
+          <label>Images</label>
+          <select id="genN">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="4">4</option>
+          </select>
+        </div>
+        <div>
+          <label>Quality</label>
+          <select id="genQuality">
+            <option value="standard">Standard</option>
+            <option value="hd">HD</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- COST ESTIMATE -->
+    <div class="cost-bar">
+      <span class="cost-label">💰 Est. Cost</span>
+      <span class="cost-val" id="genCostVal">~$0.040</span>
+      <span class="cost-note">per image</span>
+    </div>
+
+    <button class="btn btn-gen" id="btnGenerate" onclick="runGenerate()">
+      <span id="genBtnTxt">⚡ GENERATE IMAGE</span>
+    </button>
+
+    <div class="log" id="genLog"></div>
+  </div>
+
+  <!-- ═══════════════ EDIT PANEL ═══════════════ -->
+  <div class="panel" id="panelEdit">
+
+    <div class="card">
+      <div class="card-title"><span>SOURCE IMAGE</span><span class="badge edit">EDIT</span></div>
+
+      <div class="img-source-tabs">
+        <div class="img-src-btn active" id="srcLast" onclick="switchImgSrc('last')">📋 USE LAST GENERATED</div>
+        <div class="img-src-btn" id="srcUpload" onclick="switchImgSrc('upload')">📎 UPLOAD IMAGE</div>
+      </div>
+
+      <!-- Last Generated -->
+      <div id="srcLastPanel">
+        <div class="last-gen-preview" id="lastGenPreview" onclick="selectLastGen()">
+          <div class="no-last" id="noLastMsg">No generated image yet — run Generate first</div>
+        </div>
+      </div>
+
+      <!-- Upload -->
+      <div id="srcUploadPanel" style="display:none">
+        <div class="file-drop" id="fileDrop">
+          <input type="file" accept="image/*" id="fileInput" onchange="handleFileUpload(event)">
+          <div class="icon">📁</div>
+          <p>Tap to pick image or drag &amp; drop</p>
+        </div>
+        <div class="file-preview" id="filePreview"></div>
+      </div>
+
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>EDIT SETTINGS</span></div>
+
+      <div class="field">
+        <label>Edit Prompt — describe the change</label>
+        <textarea id="editPrompt" placeholder="Change the background to a snowy tundra, keep the wolf..."></textarea>
+      </div>
+
+    </div>
+
+    <!-- COST ESTIMATE -->
+    <div class="cost-bar">
+      <span class="cost-label">💰 Est. Cost</span>
+      <span class="cost-val" id="editCostVal">~$0.040</span>
+      <span class="cost-note">per edit</span>
+    </div>
+
+    <button class="btn btn-edit" id="btnEdit" onclick="runEdit()">
+      <span id="editBtnTxt">✏️ EDIT IMAGE</span>
+    </button>
+
+    <div class="log" id="editLog"></div>
+  </div>
+
+  <!-- ═══════════════ OUTPUT ═══════════════ -->
+  <div style="margin-top:14px">
+    <div class="card-title" style="padding: 0 2px 8px; display:flex; align-items:center; gap:8px;">
+      <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.12em; color:var(--muted); text-transform:uppercase;">OUTPUT</span>
+      <div id="outputCostTag" style="display:none; margin-left:auto; font-family:'Space Mono',monospace; font-size:10px; color:var(--accent3);"></div>
+    </div>
+
+    <div class="output-area" id="outputArea">
+      <div class="output-placeholder" id="outputPlaceholder">
+        <div class="icon">🖼</div>
+        <p>Your generated or edited image<br>will appear here</p>
+      </div>
+      <div class="loading-wrap" id="loadingWrap" style="display:none">
+        <div class="spinner"></div>
+        <p id="loadingMsg">Generating...</p>
+      </div>
+      <img id="outputImg" class="output-img" style="display:none" alt="Output">
+      <div class="output-actions hidden" id="outputActions">
+        <button class="btn btn-sm btn-ghost" onclick="useAsEdit()">✏️ Use for Edit</button>
+        <button class="btn btn-sm btn-ghost" onclick="downloadImg()">⬇ Save</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────
+let lastGeneratedB64 = null;    // base64 of last gen image (no prefix)
+let lastGeneratedUrl = null;    // object URL for display
+let uploadedB64 = null;         // base64 of uploaded file (no prefix)
+let uploadedMime = 'image/png';
+let imgSourceMode = 'last';     // 'last' | 'upload'
+let selectedSize = '1024x1024';
+let editSelectedSize = '1024x1024';
+let isLastGenSelected = false;
+let currentTab = 'gen';
+
+// ── PRICING (approximate xAI grok-2-image) ─────────────
+// Based on public xAI pricing. Adjust if needed.
+const PRICE = { standard: 0.04, hd: 0.08 };
+
+// ── UI HELPERS ─────────────────────────────────────────
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.className = 'toast', 2800);
+}
+
+function setLoading(on, msg = 'Processing...') {
+  document.getElementById('loadingWrap').style.display = on ? 'flex' : 'none';
+  document.getElementById('loadingMsg').textContent = msg;
+  document.getElementById('outputPlaceholder').style.display = on ? 'none' : (document.getElementById('outputImg').style.display === 'block' ? 'none' : 'flex');
+  if (on) {
+    document.getElementById('outputImg').style.display = 'none';
+    document.getElementById('outputActions').className = 'output-actions hidden';
+  }
+}
+
+function showOutput(b64, mime = 'image/png') {
+  const img = document.getElementById('outputImg');
+  img.src = `data:${mime};base64,${b64}`;
+  img.style.display = 'block';
+  document.getElementById('outputPlaceholder').style.display = 'none';
+  document.getElementById('loadingWrap').style.display = 'none';
+  document.getElementById('outputActions').className = 'output-actions';
+}
+
+function logMsg(panelId, msg) {
+  const el = document.getElementById(panelId);
+  el.classList.add('show');
+  el.textContent = msg;
+}
+
+function toggleKey() {
+  const inp = document.getElementById('apiKey');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function updateStatusDot() {
+  const key = document.getElementById('apiKey').value.trim();
+  document.getElementById('statusDot').className = 'status-dot' + (key ? ' active' : '');
+}
+document.getElementById('apiKey').addEventListener('input', updateStatusDot);
+
+// ── TABS ───────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('panelGen').className = 'panel' + (tab === 'gen' ? ' active' : '');
+  document.getElementById('panelEdit').className = 'panel' + (tab === 'edit' ? ' active' : '');
+  document.getElementById('tabGen').className = 'tab' + (tab === 'gen' ? ' active' : '');
+  document.getElementById('tabEdit').className = 'tab edit-tab' + (tab === 'edit' ? ' active' : '');
+}
+
+// ── SIZE PICKERS ───────────────────────────────────────
+function pickSize(el) {
+  document.querySelectorAll('#sizeGrid .size-opt').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  selectedSize = el.dataset.size;
+  updateGenCost();
+}
+function pickEditSize(el) {
+  document.querySelectorAll('#editSizeGrid .size-opt').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  editSelectedSize = el.dataset.size;
+  updateEditCost();
+}
+
+// ── COST CALC ──────────────────────────────────────────
+function updateGenCost() {
+  const q = document.getElementById('genQuality').value;
+  const n = parseInt(document.getElementById('genN').value);
+  const price = PRICE[q] * n;
+  document.getElementById('genCostVal').textContent = `~$${price.toFixed(3)}`;
+}
+function updateEditCost() {
+  document.getElementById('editCostVal').textContent = `~$${PRICE.standard.toFixed(3)}`;
+}
+document.getElementById('genQuality').addEventListener('change', updateGenCost);
+document.getElementById('genN').addEventListener('change', updateGenCost);
+
+// ── IMAGE SOURCE TOGGLE ────────────────────────────────
+function switchImgSrc(mode) {
+  imgSourceMode = mode;
+  document.getElementById('srcLast').className = 'img-src-btn' + (mode === 'last' ? ' active' : '');
+  document.getElementById('srcUpload').className = 'img-src-btn' + (mode === 'upload' ? ' active' : '');
+  document.getElementById('srcLastPanel').style.display = mode === 'last' ? 'block' : 'none';
+  document.getElementById('srcUploadPanel').style.display = mode === 'upload' ? 'block' : 'none';
+}
+
+function selectLastGen() {
+  if (!lastGeneratedB64) return;
+  isLastGenSelected = !isLastGenSelected;
+  document.getElementById('lastGenPreview').className = 'last-gen-preview' + (isLastGenSelected ? ' selected' : '');
+}
+
+// Auto-populate last gen preview when available
+function updateLastGenPreview() {
+  if (!lastGeneratedB64) return;
+  const container = document.getElementById('lastGenPreview');
+  container.innerHTML = `<img src="data:image/png;base64,${lastGeneratedB64}" alt="Last generated">`;
+  document.getElementById('noLastMsg') && document.getElementById('noLastMsg').remove();
+  isLastGenSelected = true;
+  container.className = 'last-gen-preview selected';
+}
+
+// ── FILE UPLOAD ────────────────────────────────────────
+function handleFileUpload(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  uploadedMime = file.type || 'image/png';
+  const reader = new FileReader();
+  reader.onload = e => {
+    const result = e.target.result;
+    uploadedB64 = result.split(',')[1];
+    const preview = document.getElementById('filePreview');
+    preview.innerHTML = `<img src="${result}" alt="Upload preview">`;
+    showToast('Image loaded ✓', 'ok');
+  };
+  reader.readAsDataURL(file);
+}
+
+// Drag & drop
+const dropZone = document.getElementById('fileDrop');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    const dt = new DataTransfer(); dt.items.add(file);
+    document.getElementById('fileInput').files = dt.files;
+    handleFileUpload({ target: { files: [file] } });
+  }
+});
+
+// ── USE AS EDIT ────────────────────────────────────────
+function useAsEdit() {
+  if (!lastGeneratedB64) return;
+  switchTab('edit');
+  switchImgSrc('last');
+  isLastGenSelected = true;
+  updateLastGenPreview();
+  showToast('Ready to edit ✏️', 'ok');
+}
+
+// ── DOWNLOAD ───────────────────────────────────────────
+function downloadImg() {
+  const img = document.getElementById('outputImg');
+  if (!img.src || img.src === window.location.href) return;
+  const a = document.createElement('a');
+  a.href = img.src;
+  a.download = `grok-image-${Date.now()}.png`;
+  a.click();
+}
+
+// ── API KEY CHECK ──────────────────────────────────────
+function getApiKey() {
+  const key = document.getElementById('apiKey').value.trim();
+  if (!key) { showToast('Paste your xAI API key first', 'err'); return null; }
+  return key;
+}
+
+// ── GENERATE ───────────────────────────────────────────
+async function runGenerate() {
+  const key = getApiKey(); if (!key) return;
+  const prompt = document.getElementById('genPrompt').value.trim();
+  if (!prompt) { showToast('Enter a prompt first', 'err'); return; }
+
+  const n = parseInt(document.getElementById('genN').value);
+  const quality = document.getElementById('genQuality').value;
+
+  const btn = document.getElementById('btnGenerate');
+  btn.disabled = true;
+  document.getElementById('genBtnTxt').textContent = 'Generating...';
+  setLoading(true, 'Generating with Grok...');
+  document.getElementById('genLog').className = 'log';
+
+  try {
+    const body = {
+      model: 'grok-2-image',
+      prompt,
+      n
+    };
+
+    const res = await fetch('https://api.x.ai/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      const errMsg = data?.error?.message || JSON.stringify(data);
+      throw new Error(errMsg);
+    }
+
+    const imgUrl = data.data[0].url;
+    const imgRes = await fetch(imgUrl);
+    const imgBlob = await imgRes.blob();
+    const b64 = await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result.split(',')[1]);
+      reader.readAsDataURL(imgBlob);
+    });
+    lastGeneratedB64 = b64;
+    showOutput(b64);
+    updateLastGenPreview();
+
+    const cost = (PRICE[quality] * n).toFixed(3);
+    document.getElementById('outputCostTag').style.display = 'block';
+    document.getElementById('outputCostTag').textContent = `💰 ~$${cost} · ${n} image${n>1?'s':''}`;
+    logMsg('genLog', `✓ Done · model: grok-2-image · quality: ${quality} · images: ${n}`);
+    showToast('Image generated! ⚡', 'ok');
+
+  } catch (err) {
+    setLoading(false);
+    document.getElementById('outputPlaceholder').style.display = 'flex';
+    logMsg('genLog', `✗ Error: ${err.message}`);
+    showToast('Error: ' + err.message.slice(0, 60), 'err');
+  } finally {
+    btn.disabled = false;
+    document.getElementById('genBtnTxt').textContent = '⚡ GENERATE IMAGE';
+  }
+}
+
+// ── EDIT ───────────────────────────────────────────────
+async function runEdit() {
+  const key = getApiKey(); if (!key) return;
+  const prompt = document.getElementById('editPrompt').value.trim();
+  if (!prompt) { showToast('Enter an edit prompt first', 'err'); return; }
+
+  // Determine source image
+  let sourceB64 = null;
+  let sourceMime = 'image/png';
+
+  if (imgSourceMode === 'last') {
+    if (!lastGeneratedB64) { showToast('No generated image yet — generate one first', 'err'); return; }
+    sourceB64 = lastGeneratedB64;
+  } else {
+    if (!uploadedB64) { showToast('Please upload an image first', 'err'); return; }
+    sourceB64 = uploadedB64;
+    sourceMime = uploadedMime;
+  }
+
+  const btn = document.getElementById('btnEdit');
+  btn.disabled = true;
+  document.getElementById('editBtnTxt').textContent = 'Editing...';
+  setLoading(true, 'Editing with Grok...');
+  document.getElementById('editLog').className = 'log';
+
+  try {
+    // Convert b64 to Blob for FormData
+    const byteChars = atob(sourceB64);
+    const byteNums = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+    const byteArr = new Uint8Array(byteNums);
+    const blob = new Blob([byteArr], { type: sourceMime });
+
+    const formData = new FormData();
+    formData.append('model', 'grok-2-image');
+    formData.append('prompt', prompt);
+    formData.append('image', blob, 'source.png');
+
+    const res = await fetch('https://api.x.ai/v1/images/edits', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}` },
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      const errMsg = data?.error?.message || JSON.stringify(data);
+      throw new Error(errMsg);
+    }
+
+    const editUrl = data.data[0].url;
+    const editRes = await fetch(editUrl);
+    const editBlob = await editRes.blob();
+    const b64 = await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result.split(',')[1]);
+      reader.readAsDataURL(editBlob);
+    });
+    lastGeneratedB64 = b64;
+    showOutput(b64);
+    updateLastGenPreview();
+
+    document.getElementById('outputCostTag').style.display = 'block';
+    document.getElementById('outputCostTag').textContent = `💰 ~$${PRICE.standard.toFixed(3)} · edit`;
+    logMsg('editLog', `✓ Done · model: grok-2-image edit`);
+    showToast('Image edited! ✏️', 'ok');
+
+  } catch (err) {
+    setLoading(false);
+    document.getElementById('outputPlaceholder').style.display = 'flex';
+    logMsg('editLog', `✗ Error: ${err.message}`);
+    showToast('Error: ' + err.message.slice(0, 60), 'err');
+  } finally {
+    btn.disabled = false;
+    document.getElementById('editBtnTxt').textContent = '✏️ EDIT IMAGE';
+  }
+}
+</script>
+</body>
+</html>
