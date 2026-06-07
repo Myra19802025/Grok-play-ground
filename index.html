@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Atlas Image Playground</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f; --surface: #13131a; --surface2: #1c1c26;
+    --border: #2a2a38; --accent: #7c6aff; --accent2: #ff6a9e;
+    --accent3: #6affd4; --text: #e8e8f0; --muted: #6b6b80;
+    --success: #4ade80; --error: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+  .app { max-width: 760px; margin: 0 auto; padding: 16px 16px 80px; }
+
+  header { display: flex; align-items: center; gap: 12px; padding: 18px 0 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .logo { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 800; color: #fff; flex-shrink: 0; box-shadow: 0 4px 16px rgba(124,106,255,0.35); }
+  .htxt h1 { font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; letter-spacing: 0.05em; }
+  .htxt p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .dot { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: all 0.3s; }
+  .dot.on { background: var(--success); box-shadow: 0 0 8px var(--success); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .ct { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .badge { font-size: 9px; padding: 2px 8px; border-radius: 20px; font-family: 'Space Mono', monospace; }
+  .bg { border: 1px solid var(--accent); color: var(--accent); background: rgba(124,106,255,0.08); }
+  .be { border: 1px solid var(--accent2); color: var(--accent2); background: rgba(255,106,158,0.08); }
+
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; }
+  input[type=password], input[type=text], textarea, select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; padding: 10px 12px; outline: none; transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 76px; line-height: 1.5; }
+  select option { background: var(--surface2); }
+  .field { margin-bottom: 12px; }
+  .row2 { display: flex; gap: 10px; }
+  .row2 > * { flex: 1; }
+  .apirow { position: relative; }
+  .apirow input { padding-right: 44px; font-family: 'Space Mono', monospace; font-size: 12px; }
+  .eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tab { flex: 1; padding: 10px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.1em; cursor: pointer; text-align: center; font-weight: 700; transition: all 0.2s; }
+  .tab.ag { border-color: var(--accent); color: var(--accent); background: rgba(124,106,255,0.08); }
+  .tab.ae { border-color: var(--accent2); color: var(--accent2); background: rgba(255,106,158,0.08); }
+  .panel { display: none; }
+  .panel.show { display: block; animation: fadeIn 0.2s ease; }
+
+  .cost-bar { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-family: 'Space Mono', monospace; font-size: 11px; }
+  .cv { color: var(--accent3); font-weight: 700; font-size: 14px; }
+
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border-radius: 10px; border: none; font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: 0.08em; cursor: pointer; font-weight: 700; transition: all 0.2s; }
+  .btn-g { background: linear-gradient(135deg, var(--accent), #9b5fff); color: #fff; box-shadow: 0 4px 20px rgba(124,106,255,0.3); }
+  .btn-e { background: linear-gradient(135deg, var(--accent2), #ff3d7f); color: #fff; box-shadow: 0 4px 20px rgba(255,106,158,0.3); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+  .btn-sm { padding: 7px 14px; width: auto; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); font-family: 'Space Mono', monospace; font-size: 10px; cursor: pointer; font-weight: 700; transition: all 0.2s; }
+
+  .isrc-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .isrc { flex: 1; padding: 7px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.08em; cursor: pointer; text-align: center; transition: all 0.2s; }
+  .isrc.on { border-color: var(--accent2); color: var(--accent2); background: rgba(255,106,158,0.08); }
+
+  .fdrop { border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: border-color 0.2s; position: relative; }
+  .fdrop:hover { border-color: var(--accent2); }
+  .fdrop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .fpreview { margin-top: 8px; display: flex; justify-content: center; }
+  .fpreview img { max-height: 130px; border-radius: 8px; }
+  .lpreview { border-radius: 8px; overflow: hidden; border: 2px solid var(--accent2); }
+  .lpreview img { width: 100%; display: block; max-height: 170px; object-fit: contain; }
+  .no-last { color: var(--muted); font-size: 12px; text-align: center; padding: 20px; border: 1px dashed var(--border); border-radius: 8px; font-family: 'Space Mono', monospace; }
+
+  .out-wrap { margin-top: 16px; }
+  .out-lbl { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .out-area { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; min-height: 220px; display: flex; align-items: center; justify-content: center; position: relative; flex-direction: column; }
+  .out-ph { text-align: center; padding: 40px 24px; }
+  .out-ph .ic { font-size: 40px; margin-bottom: 12px; opacity: 0.2; }
+  .out-ph p { color: var(--muted); font-size: 13px; }
+  .out-img { width: 100%; display: block; border-radius: 14px; }
+  .out-acts { display: flex; gap: 8px; padding: 10px; justify-content: flex-end; width: 100%; }
+
+  .prog { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--border); }
+  .prog-fill { height: 100%; width: 0%; transition: width 0.4s ease; }
+  .pg { background: linear-gradient(90deg, var(--accent), #9b5fff); }
+  .pe { background: linear-gradient(90deg, var(--accent2), #ff3d7f); }
+
+  .ldwrap { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 48px; }
+  .spin { width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--border); animation: spin 0.7s linear infinite; }
+  .spin.sg { border-top-color: var(--accent); }
+  .spin.se { border-top-color: var(--accent2); }
+  .ldmsg { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); letter-spacing: 0.08em; }
+  .ldsub { font-family: 'Space Mono', monospace; font-size: 10px; color: #2a2a3e; }
+  .pollst { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--accent3); margin-top: 2px; }
+
+  .log { padding: 8px 12px; margin-top: 10px; border-radius: 8px; background: var(--surface); font-family: 'Space Mono', monospace; font-size: 10px; line-height: 1.6; word-break: break-all; display: none; }
+  .log.show { display: block; }
+  .log.ok { border: 1px solid var(--success); color: var(--success); }
+  .log.err { border: 1px solid var(--error); color: var(--error); }
+
+  .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 20px; font-family: 'Space Mono', monospace; font-size: 11px; transition: transform 0.3s; z-index: 100; white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.ok { border-color: var(--success); color: var(--success); }
+  .toast.err { border-color: var(--error); color: var(--error); }
+
+  /* model badge colors */
+  select optgroup { color: var(--muted); font-size: 11px; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">AI</div>
+    <div class="htxt">
+      <h1>ATLAS IMAGE PLAYGROUND</h1>
+      <p>Atlas Cloud · Multi-Model · Local only · No data stored</p>
+    </div>
+    <div class="dot" id="dot"></div>
+  </header>
+
+  <!-- API KEY -->
+  <div class="card">
+    <div class="ct">API CONFIG</div>
+    <div class="field" style="margin-bottom:0">
+      <label>Atlas Cloud API Key</label>
+      <div class="apirow">
+        <input type="password" id="apiKey" placeholder="your-atlascloud-api-key" oninput="updateDot()">
+        <button class="eye" onclick="toggleKey()" type="button">👁</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab ag" id="tabG" onclick="switchTab('gen')">⚡ GENERATE</div>
+    <div class="tab" id="tabE" onclick="switchTab('edit')">✏️ EDIT</div>
+  </div>
+
+  <!-- ══════════ GENERATE PANEL ══════════ -->
+  <div class="panel show" id="panelG">
+    <div class="card">
+      <div class="ct"><span>GENERATE SETTINGS</span><span class="badge bg">GEN</span></div>
+
+      <div class="field">
+        <label>Model</label>
+        <select id="genModel" onchange="onGenModelChange()">
+          <optgroup label="── xAI Grok ──">
+            <option value="xai/grok-imagine-image-quality/text-to-image">xAI · Grok Imagine (1K/2K, 14 ratios)</option>
+          </optgroup>
+          <optgroup label="── Alibaba Wan ──">
+            <option value="alibaba/wan-2.7/text-to-image">Alibaba · Wan 2.7 (1K/2K)</option>
+            <option value="alibaba/wan-2.7-pro/text-to-image">Alibaba · Wan 2.7 Pro (1K/2K/4K)</option>
+            <option value="alibaba/wan-2.6/text-to-image">Alibaba · Wan 2.6 (many sizes)</option>
+          </optgroup>
+          <optgroup label="── ByteDance Seedream ──">
+            <option value="bytedance/seedream-v5.0-lite">ByteDance · Seedream v5.0 Lite</option>
+            <option value="bytedance/seedream-v4.5">ByteDance · Seedream v4.5 (up to 4K)</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Prompt</label>
+        <textarea id="genPrompt" placeholder="Epic cinematic landscape, dramatic lighting, ultra detailed..."></textarea>
+      </div>
+
+      <!-- Dynamic params per model -->
+      <div id="genParams"></div>
+
+    </div>
+
+    <div class="cost-bar">
+      <span style="color:var(--muted);flex:1">💰 Est. Cost</span>
+      <span class="cv" id="genCostVal">—</span>
+      <span style="color:var(--muted);font-size:9px" id="genCostNote">varies by model</span>
+    </div>
+
+    <button class="btn btn-g" id="btnG" onclick="runGenerate()">⚡ GENERATE IMAGE</button>
+    <div class="log" id="genLog"></div>
+  </div>
+
+  <!-- ══════════ EDIT PANEL ══════════ -->
+  <div class="panel" id="panelE">
+    <div class="card">
+      <div class="ct"><span>SOURCE IMAGE</span><span class="badge be">EDIT</span></div>
+      <div class="isrc-tabs">
+        <div class="isrc on" id="srcL" onclick="switchSrc('last')">📋 LAST GENERATED</div>
+        <div class="isrc" id="srcU" onclick="switchSrc('upload')">📎 UPLOAD IMAGE</div>
+      </div>
+      <div id="lastPan">
+        <div class="no-last" id="lastPrev">No generated image yet — run Generate first</div>
+      </div>
+      <div id="upPan" style="display:none">
+        <div class="fdrop" id="fdrop">
+          <input type="file" accept="image/*" id="fileInp" onchange="handleFile(event)">
+          <div style="font-size:26px;margin-bottom:6px">📁</div>
+          <p style="color:var(--muted);font-size:12px">Tap to pick image</p>
+        </div>
+        <div class="fpreview" id="fpreview"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ct">EDIT SETTINGS</div>
+
+      <div class="field">
+        <label>Edit Model</label>
+        <select id="editModel" onchange="onEditModelChange()">
+          <optgroup label="── xAI Grok ──">
+            <option value="xai/grok-imagine-image-quality/edit">xAI · Grok Imagine Edit</option>
+          </optgroup>
+          <optgroup label="── Alibaba Wan ──">
+            <option value="alibaba/wan-2.7/image-edit">Alibaba · Wan 2.7 Edit</option>
+            <option value="alibaba/wan-2.7-pro/image-edit">Alibaba · Wan 2.7 Pro Edit</option>
+            <option value="alibaba/wan-2.6/image-edit">Alibaba · Wan 2.6 Edit</option>
+          </optgroup>
+          <optgroup label="── ByteDance Seedream ──">
+            <option value="bytedance/seedream-v5.0-lite/edit">ByteDance · Seedream v5.0 Lite Edit</option>
+            <option value="bytedance/seedream-v4.5/edit">ByteDance · Seedream v4.5 Edit</option>
+          </optgroup>
+          <optgroup label="── OpenAI ──">
+            <option value="openai/gpt-image-1/edit">OpenAI · GPT-Image-1 Edit</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Edit Prompt</label>
+        <textarea id="editPrompt" placeholder="Transform into watercolour painting, keep the composition..."></textarea>
+      </div>
+
+      <div id="editParams"></div>
+    </div>
+
+    <div class="cost-bar">
+      <span style="color:var(--muted);flex:1">💰 Est. Cost</span>
+      <span class="cv" id="editCostVal">—</span>
+      <span style="color:var(--muted);font-size:9px">varies by model</span>
+    </div>
+
+    <button class="btn btn-e" id="btnE" onclick="runEdit()">✏️ EDIT IMAGE</button>
+    <div class="log" id="editLog"></div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="out-wrap">
+    <div class="out-lbl">
+      <span>OUTPUT</span>
+      <span id="actCost" style="margin-left:auto;color:var(--accent3);font-size:10px;font-family:'Space Mono',monospace"></span>
+    </div>
+    <div class="out-area" id="outArea">
+      <div class="prog"><div class="prog-fill" id="progFill"></div></div>
+      <div class="out-ph" id="outPh">
+        <div class="ic">🖼</div>
+        <p>Your image will appear here</p>
+      </div>
+      <div class="ldwrap" id="ldWrap" style="display:none">
+        <div class="spin sg" id="spinner"></div>
+        <div class="ldmsg" id="ldMsg">Submitting...</div>
+        <div class="ldsub">Usually 10–40s</div>
+        <div class="pollst" id="pollSt"></div>
+      </div>
+      <div id="outRes" style="display:none;width:100%">
+        <img id="outImg" class="out-img" alt="Output">
+        <div class="out-acts">
+          <button class="btn-sm" style="color:var(--accent)" onclick="useForEdit()">✏️ Use for Edit</button>
+          <button class="btn-sm" style="color:var(--accent2)" onclick="dlImg()">⬇ Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const BASE = 'https://api.atlascloud.ai/api/v1/model';
+let lastDataUrl = null;
+let uploadedDataUrl = null;
+let srcMode = 'last';
+let progTimer = null, progVal = 0;
+let currentTab = 'gen';
+
+// ─── MODEL CONFIG ────────────────────────────────────────────────
+const GEN_MODELS = {
+  'xai/grok-imagine-image-quality/text-to-image': {
+    params: [
+      { id:'ar', label:'Aspect Ratio', type:'select', options:['1:1','3:4','4:3','9:16','16:9','2:3','3:2','9:19.5','19.5:9','9:20','20:9','1:2','2:1'], default:'1:1', key:'aspect_ratio' },
+      { id:'res', label:'Resolution', type:'select', options:['1k','2k'], default:'1k', key:'resolution' },
+      { id:'num', label:'Images', type:'select', options:['1','2','3','4'], default:'1', key:'num_images', isInt:true },
+    ],
+    buildBody: (prompt, p) => ({ model:'xai/grok-imagine-image-quality/text-to-image', prompt, aspect_ratio:p.ar, resolution:p.res, num_images:parseInt(p.num), enable_base64_output:true }),
+    cost: (p) => `~$${(parseInt(p.num||1) * (p.res==='2k'?0.07:0.05)).toFixed(2)}`
+  },
+  'alibaba/wan-2.7/text-to-image': {
+    params: [
+      { id:'size', label:'Resolution', type:'select', options:['1K','2K'], default:'1K', key:'size' },
+      { id:'num', label:'Images', type:'select', options:['1','2','3','4'], default:'1', key:'n', isInt:true },
+    ],
+    buildBody: (prompt, p) => ({ model:'alibaba/wan-2.7/text-to-image', prompt, size:p.size, n:parseInt(p.num), thinking_mode:true, seed:-1, enable_base64_output:true }),
+    cost: () => '~$0.05–0.07'
+  },
+  'alibaba/wan-2.7-pro/text-to-image': {
+    params: [
+      { id:'size', label:'Resolution', type:'select', options:['1K','2K','4K'], default:'2K', key:'size' },
+      { id:'num', label:'Images', type:'select', options:['1','2','3','4'], default:'1', key:'n', isInt:true },
+    ],
+    buildBody: (prompt, p) => ({ model:'alibaba/wan-2.7-pro/text-to-image', prompt, size:p.size, n:parseInt(p.num), thinking_mode:true, seed:-1, enable_base64_output:true }),
+    cost: () => '~$0.07–0.14'
+  },
+  'alibaba/wan-2.6/text-to-image': {
+    params: [
+      { id:'size', label:'Size', type:'select', options:['1024*1024','1280*1280','1280*720','720*1280','1920*1080','1080*1920','1440*1440','960*1280','1280*960'], default:'1280*1280', key:'size' },
+    ],
+    buildBody: (prompt, p) => ({ model:'alibaba/wan-2.6/text-to-image', prompt, size:p.size, seed:-1, enable_base64_output:true }),
+    cost: () => '~$0.03–0.05'
+  },
+  'bytedance/seedream-v5.0-lite': {
+    params: [
+      { id:'size', label:'Size', type:'select', options:['2048*2048','2304*1728','1728*2304','2848*1600','1600*2848','2496*1664','1664*2496','3136*1344'], default:'2048*2048', key:'size' },
+      { id:'fmt', label:'Format', type:'select', options:['jpeg','png'], default:'jpeg', key:'output_format' },
+    ],
+    buildBody: (prompt, p) => ({ model:'bytedance/seedream-v5.0-lite', prompt, size:p.size, output_format:p.fmt, enable_base64_output:true }),
+    cost: () => '~$0.04'
+  },
+  'bytedance/seedream-v4.5': {
+    params: [
+      { id:'size', label:'Size', type:'select', options:['2048*2048','2304*1728','1728*2304','2848*1600','1600*2848','4096*4096','4704*3520','3520*4704'], default:'2048*2048', key:'size' },
+    ],
+    buildBody: (prompt, p) => ({ model:'bytedance/seedream-v4.5', prompt, size:p.size, enable_base64_output:true }),
+    cost: () => '~$0.07–0.20'
+  },
+};
+
+const EDIT_MODELS = {
+  'xai/grok-imagine-image-quality/edit': {
+    params: [
+      { id:'ar', label:'Aspect Ratio', type:'select', options:['auto','1:1','3:4','4:3','9:16','16:9','2:3','3:2'], default:'auto', key:'aspect_ratio' },
+      { id:'res', label:'Resolution', type:'select', options:['1k','2k'], default:'1k', key:'resolution' },
+    ],
+    buildBody: (prompt, imgDataUrl, p) => ({ model:'xai/grok-imagine-image-quality/edit', prompt, image_urls:[imgDataUrl], aspect_ratio:p.ar, resolution:p.res, num_images:1, enable_base64_output:true }),
+    cost: () => '~$0.06'
+  },
+  'alibaba/wan-2.7/image-edit': {
+    params: [
+      { id:'size', label:'Resolution', type:'select', options:['1K','2K'], default:'2K', key:'size' },
+      { id:'num', label:'Images', type:'select', options:['1','2','3','4'], default:'1', key:'n', isInt:true },
+    ],
+    buildBody: (prompt, imgDataUrl, p) => ({ model:'alibaba/wan-2.7/image-edit', prompt, images:[imgDataUrl], size:p.size, n:parseInt(p.num), thinking_mode:true, seed:-1, enable_base64_output:true }),
+    cost: () => '~$0.05–0.07'
+  },
+  'alibaba/wan-2.7-pro/image-edit': {
+    params: [
+      { id:'size', label:'Resolution', type:'select', options:['1K','2K'], default:'2K', key:'size' },
+      { id:'num', label:'Images', type:'select', options:['1','2','3','4'], default:'1', key:'n', isInt:true },
+    ],
+    buildBody: (prompt, imgDataUrl, p) => ({ model:'alibaba/wan-2.7-pro/image-edit', prompt, images:[imgDataUrl], size:p.size, n:parseInt(p.num), thinking_mode:true, seed:-1, enable_base64_output:true }),
+    cost: () => '~$0.07–0.14'
+  },
+  'alibaba/wan-2.6/image-edit': {
+    params: [
+      { id:'size', label:'Size', type:'select', options:['1024*1024','1280*1280','1280*720','720*1280','1920*1080','1080*1920'], default:'1280*1280', key:'size' },
+    ],
+    buildBody: (prompt, imgDataUrl, p) => ({ model:'alibaba/wan-2.6/image-edit', prompt, images:[imgDataUrl], size:p.size, seed:-1, enable_base64_output:true }),
+    cost: () => '~$0.03–0.05'
+  },
+  'bytedance/seedream-v5.0-lite/edit': {
+    params: [
+      { id:'size', label:'Size', type:'select', options:['2048*2048','2304*1728','1728*2304','2848*1600','1600*2848','2496*1664','1664*2496'], default:'2048*2048', key:'size' },
+      { id:'fmt', label:'Format', type:'select', options:['jpeg','png'], default:'jpeg', key:'output_format' },
+    ],
+    buildBody: (prompt, imgDataUrl, p) => ({ model:'bytedance/seedream-v5.0-lite/edit', prompt, images:[imgDataUrl], size:p.size, output_format:p.fmt, enable_base64_output:true }),
+    cost: () => '~$0.04'
+  },
+  'bytedance/seedream-v4.5/edit': {
+    params: [
+      { id:'size', label:'Size', type:'select', options:['2048*2048','2304*1728','1728*2304','2848*1600','1600*2848','4096*4096','4704*3520','3520*4704'], default:'2048*2048', key:'size' },
+    ],
+    buildBody: (prompt, imgDataUrl, p) => ({ model:'bytedance/seedream-v4.5/edit', prompt, images:[imgDataUrl], size:p.size, enable_base64_output:true }),
+    cost: () => '~$0.07'
+  },
+  'openai/gpt-image-1/edit': {
+    params: [
+      { id:'size', label:'Size', type:'select', options:['auto','1024x1024','1024x1536','1536x1024'], default:'auto', key:'size' },
+      { id:'quality', label:'Quality', type:'select', options:['medium','high','low'], default:'medium', key:'quality' },
+    ],
+    buildBody: (prompt, imgDataUrl, p) => ({ model:'openai/gpt-image-1/edit', prompt, image:[imgDataUrl], size:p.size, quality:p.quality, enable_base64_output:true }),
+    cost: (p) => p.quality==='high' ? '~$0.15' : '~$0.07'
+  },
+};
+
+// ─── PARAM RENDERING ─────────────────────────────────────────────
+function renderParams(modelId, containerId, cfg, costValId) {
+  const c = cfg[modelId];
+  if (!c) return;
+  const el = document.getElementById(containerId);
+  if (c.params.length === 0) { el.innerHTML = ''; return; }
+  let html = '<div class="row2" style="flex-wrap:wrap">';
+  c.params.forEach(p => {
+    html += `<div class="field" style="min-width:120px"><label>${p.label}</label><select id="p_${p.id}" onchange="updateCostDisplay('${modelId}','${costValId}','${containerId}')">`;
+    p.options.forEach(o => html += `<option value="${o}"${o===p.default?' selected':''}>${o}</option>`);
+    html += `</select></div>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+  updateCostDisplay(modelId, costValId, containerId);
+}
+
+function getParamVals(modelId, cfg) {
+  const c = cfg[modelId]; if (!c) return {};
+  const vals = {};
+  c.params.forEach(p => {
+    const el = document.getElementById('p_'+p.id);
+    vals[p.id] = el ? el.value : p.default;
+  });
+  return vals;
+}
+
+function updateCostDisplay(modelId, costValId, containerId) {
+  const cfg = containerId === 'genParams' ? GEN_MODELS : EDIT_MODELS;
+  const c = cfg[modelId]; if (!c) return;
+  const p = getParamVals(modelId, cfg);
+  document.getElementById(costValId).textContent = c.cost(p);
+}
+
+function onGenModelChange() {
+  const m = document.getElementById('genModel').value;
+  renderParams(m, 'genParams', GEN_MODELS, 'genCostVal');
+}
+function onEditModelChange() {
+  const m = document.getElementById('editModel').value;
+  renderParams(m, 'editParams', EDIT_MODELS, 'editCostVal');
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────
+function getKey() {
+  const k = document.getElementById('apiKey').value.trim();
+  if (!k) { showToast('Paste your Atlas Cloud API key first', 'err'); return null; }
+  return k;
+}
+function updateDot() {
+  document.getElementById('dot').className = 'dot' + (document.getElementById('apiKey').value.trim() ? ' on' : '');
+}
+function toggleKey() {
+  const i = document.getElementById('apiKey');
+  i.type = i.type === 'password' ? 'text' : 'password';
+}
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show' + (type ? ' '+type : '');
+  clearTimeout(t._t); t._t = setTimeout(() => t.className='toast', 3000);
+}
+function showLog(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.className = 'log show '+type;
+}
+
+// ─── PROGRESS ────────────────────────────────────────────────────
+function startProg(cls) {
+  progVal = 0;
+  const f = document.getElementById('progFill');
+  f.className = 'prog-fill '+cls; f.style.width = '0%';
+  clearInterval(progTimer);
+  progTimer = setInterval(() => {
+    progVal += Math.random() * 5;
+    if (progVal > 90) progVal = 90;
+    f.style.width = progVal + '%';
+  }, 500);
+}
+function endProg() {
+  clearInterval(progTimer);
+  const f = document.getElementById('progFill');
+  f.style.width = '100%';
+  setTimeout(() => f.style.width = '0%', 600);
+}
+
+// ─── LOADING ─────────────────────────────────────────────────────
+function setLoading(on, msg='', spinCls='sg') {
+  document.getElementById('outPh').style.display = on ? 'none' : 'flex';
+  document.getElementById('ldWrap').style.display = on ? 'flex' : 'none';
+  document.getElementById('outRes').style.display = 'none';
+  document.getElementById('ldMsg').textContent = msg;
+  document.getElementById('spinner').className = 'spin '+spinCls;
+  document.getElementById('pollSt').textContent = '';
+  if (on) startProg(spinCls === 'se' ? 'pe' : 'pg'); else endProg();
+}
+function showResult(dataUrl) {
+  document.getElementById('outImg').src = dataUrl;
+  document.getElementById('outPh').style.display = 'none';
+  document.getElementById('ldWrap').style.display = 'none';
+  document.getElementById('outRes').style.display = 'block';
+  endProg();
+}
+
+// ─── TABS ────────────────────────────────────────────────────────
+function switchTab(t) {
+  currentTab = t;
+  document.getElementById('panelG').className = 'panel'+(t==='gen'?' show':'');
+  document.getElementById('panelE').className = 'panel'+(t==='edit'?' show':'');
+  document.getElementById('tabG').className = 'tab'+(t==='gen'?' ag':'');
+  document.getElementById('tabE').className = 'tab'+(t==='edit'?' ae':'');
+}
+function switchSrc(m) {
+  srcMode = m;
+  document.getElementById('srcL').className = 'isrc'+(m==='last'?' on':'');
+  document.getElementById('srcU').className = 'isrc'+(m==='upload'?' on':'');
+  document.getElementById('lastPan').style.display = m==='last'?'block':'none';
+  document.getElementById('upPan').style.display = m==='upload'?'block':'none';
+}
+
+// ─── FILE UPLOAD ─────────────────────────────────────────────────
+function handleFile(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    uploadedDataUrl = ev.target.result;
+    document.getElementById('fpreview').innerHTML = `<img src="${uploadedDataUrl}">`;
+    showToast('Image loaded ✓', 'ok');
+  };
+  r.readAsDataURL(f);
+}
+function updateLastPreview() {
+  if (!lastDataUrl) return;
+  document.getElementById('lastPrev').outerHTML = `<div class="lpreview" id="lastPrev"><img src="${lastDataUrl}"></div>`;
+}
+
+// ─── ACTIONS ─────────────────────────────────────────────────────
+function useForEdit() {
+  if (!lastDataUrl) return;
+  switchTab('edit'); switchSrc('last'); updateLastPreview();
+  showToast('Ready to edit ✏️', 'ok');
+}
+function dlImg() {
+  const s = document.getElementById('outImg').src; if (!s) return;
+  const a = document.createElement('a');
+  a.href = s; a.download = 'atlas-img-'+Date.now()+'.png'; a.click();
+}
+
+// ─── POLL ────────────────────────────────────────────────────────
+async function poll(predId, key, attempt=0) {
+  if (attempt >= 90) throw new Error('Timed out — try again');
+  document.getElementById('pollSt').textContent = `Checking... attempt ${attempt+1}`;
+  const r = await fetch(`${BASE}/prediction/${predId}`, {
+    headers: { 'Authorization': `Bearer ${key}` }
+  });
+  const d = await r.json();
+  const status = d?.data?.status || d?.status;
+  const outputs = d?.data?.outputs || d?.outputs;
+
+  if (status === 'completed' || status === 'succeeded') {
+    if (outputs && outputs[0]) return outputs[0];
+    throw new Error('Done but no output. Raw: ' + JSON.stringify(d).slice(0,200));
+  }
+  if (status === 'failed') {
+    throw new Error(d?.data?.error || d?.error || 'Generation failed');
+  }
+  await new Promise(res => setTimeout(res, 2000));
+  return poll(predId, key, attempt+1);
+}
+
+// ─── HANDLE OUTPUT ───────────────────────────────────────────────
+function outputToDataUrl(output) {
+  // Could be base64 string, data URI, or URL
+  if (!output) throw new Error('No output received');
+  if (output.startsWith('data:')) return output;
+  if (output.startsWith('http')) {
+    // Return as-is for display; download will use it directly
+    return output;
+  }
+  // Raw base64
+  return 'data:image/png;base64,' + output;
+}
+
+// ─── GENERATE ────────────────────────────────────────────────────
+async function runGenerate() {
+  const key = getKey(); if (!key) return;
+  const prompt = document.getElementById('genPrompt').value.trim();
+  if (!prompt) { showToast('Enter a prompt first', 'err'); return; }
+  const modelId = document.getElementById('genModel').value;
+  const cfg = GEN_MODELS[modelId];
+  const params = getParamVals(modelId, GEN_MODELS);
+
+  document.getElementById('btnG').disabled = true;
+  setLoading(true, 'Submitting to Atlas Cloud...', 'sg');
+  document.getElementById('genLog').className = 'log';
+
+  try {
+    const body = cfg.buildBody(prompt, params);
+    const submitRes = await fetch(`${BASE}/generateImage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify(body)
+    });
+    const sd = await submitRes.json();
+    if (!submitRes.ok) throw new Error(sd?.message || sd?.error || JSON.stringify(sd).slice(0,200));
+    const predId = sd?.data?.id || sd?.id;
+    if (!predId) throw new Error('No prediction ID. Response: ' + JSON.stringify(sd).slice(0,200));
+
+    document.getElementById('ldMsg').textContent = 'Generating... ✦';
+    const output = await poll(predId, key);
+    const dataUrl = outputToDataUrl(output);
+
+    lastDataUrl = dataUrl;
+    updateLastPreview();
+    showResult(dataUrl);
+
+    document.getElementById('actCost').textContent = `💰 ${cfg.cost(params)} · ${modelId.split('/').pop()}`;
+    showLog('genLog', `✓ ${modelId} · params: ${JSON.stringify(params)}`, 'ok');
+    showToast('Generated! ⚡', 'ok');
+
+  } catch (err) {
+    setLoading(false);
+    document.getElementById('outPh').style.display = 'flex';
+    showLog('genLog', '✗ ' + err.message, 'err');
+    showToast(err.message.slice(0,70), 'err');
+  } finally {
+    document.getElementById('btnG').disabled = false;
+  }
+}
+
+// ─── EDIT ────────────────────────────────────────────────────────
+async function runEdit() {
+  const key = getKey(); if (!key) return;
+  const prompt = document.getElementById('editPrompt').value.trim();
+  if (!prompt) { showToast('Enter an edit prompt first', 'err'); return; }
+  const src = srcMode === 'last' ? lastDataUrl : uploadedDataUrl;
+  if (!src) { showToast(srcMode==='last'?'Generate an image first':'Upload an image first', 'err'); return; }
+
+  const modelId = document.getElementById('editModel').value;
+  const cfg = EDIT_MODELS[modelId];
+  const params = getParamVals(modelId, EDIT_MODELS);
+
+  document.getElementById('btnE').disabled = true;
+  setLoading(true, 'Submitting to Atlas Cloud...', 'se');
+  document.getElementById('editLog').className = 'log';
+
+  try {
+    const body = cfg.buildBody(prompt, src, params);
+    const submitRes = await fetch(`${BASE}/generateImage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify(body)
+    });
+    const sd = await submitRes.json();
+    if (!submitRes.ok) throw new Error(sd?.message || sd?.error || JSON.stringify(sd).slice(0,200));
+    const predId = sd?.data?.id || sd?.id;
+    if (!predId) throw new Error('No prediction ID. Response: ' + JSON.stringify(sd).slice(0,200));
+
+    document.getElementById('ldMsg').textContent = 'Editing... ✦';
+    const output = await poll(predId, key);
+    const dataUrl = outputToDataUrl(output);
+
+    lastDataUrl = dataUrl;
+    updateLastPreview();
+    showResult(dataUrl);
+
+    document.getElementById('actCost').textContent = `💰 ${cfg.cost(params)} · ${modelId.split('/').pop()}`;
+    showLog('editLog', `✓ ${modelId} · params: ${JSON.stringify(params)}`, 'ok');
+    showToast('Edited! ✏️', 'ok');
+
+  } catch (err) {
+    setLoading(false);
+    document.getElementById('outPh').style.display = 'flex';
+    showLog('editLog', '✗ ' + err.message, 'err');
+    showToast(err.message.slice(0,70), 'err');
+  } finally {
+    document.getElementById('btnE').disabled = false;
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────────
+onGenModelChange();
+onEditModelChange();
+</script>
+</body>
+</html>
